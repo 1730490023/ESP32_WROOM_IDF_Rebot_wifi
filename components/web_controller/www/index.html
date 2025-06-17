@@ -1,0 +1,1185 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ESP32机械臂控制</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5; }
+    h1 { color: #333; text-align: center; margin-bottom: 30px; }
+    .container { max-width: 1000px; margin: 0 auto; background-color: white; padding: 20px; box-shadow: 0 0 10px rgba(0,0,0,0.1); border-radius: 5px; }
+    .row { display: flex; flex-wrap: wrap; margin-bottom: 20px; }
+    .col { flex: 1; padding: 10px; min-width: 300px; }
+    .slider-container { margin-bottom: 15px; }
+    .slider-container label { display: block; margin-bottom: 5px; font-weight: bold; }
+    .slider-value { display: inline-block; width: 40px; text-align: right; }
+    input[type=range] { width: 80%; vertical-align: middle; }
+    button { background-color: #4CAF50; border: none; color: white; padding: 10px 15px; text-align: center; text-decoration: none; display: inline-block; font-size: 14px; margin: 4px 2px; cursor: pointer; border-radius: 4px; }
+    button:disabled { background-color: #cccccc; opacity: 0.6; cursor: not-allowed; }
+    .btn-warning { background-color: #ff9800; }
+    .btn-danger { background-color: #f44336; }
+    .btn-info { background-color: #2196F3; }
+    .btn-success { background-color: #4CAF50; }
+    .status { padding: 10px; background-color: #e8f5e9; margin-top: 20px; border-radius: 4px; }
+    .tab { overflow: hidden; border: 1px solid #ccc; background-color: #f1f1f1; }
+    .tab button { background-color: inherit; float: left; border: none; outline: none; cursor: pointer; padding: 14px 16px; transition: 0.3s; }
+    .tab button:hover { background-color: #ddd; }
+    .tab button.active { background-color: #ccc; }
+    .tabcontent { display: none; padding: 6px 12px; border: 1px solid #ccc; border-top: none; animation: fadeEffect 1s; }
+    @keyframes fadeEffect { from {opacity: 0;} to {opacity: 1;} }
+    .path-list { margin-top: 20px; }
+    .path-item { 
+      padding: 15px; 
+      margin-bottom: 10px; 
+      background-color: #f8f9fa; 
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      display: flex; 
+      flex-direction: column;
+      transition: all 0.2s ease;
+    }
+    .path-item:hover {
+      box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+      transform: translateY(-2px);
+    }
+    .path-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .path-title {
+      font-weight: bold;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+    }
+    .path-status {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      margin-right: 8px;
+    }
+    .path-status.empty {
+      background-color: #e0e0e0;
+    }
+    .path-status.exists {
+      background-color: #4CAF50;
+    }
+    .path-info {
+      margin: 10px 0;
+      font-size: 14px;
+      color: #666;
+    }
+    .path-actions { 
+      display: flex; 
+      justify-content: flex-end;
+      margin-top: 10px;
+    }
+    .path-actions button { 
+      margin-left: 8px; 
+      padding: 6px 12px;
+      display: flex;
+      align-items: center;
+    }
+    .path-actions button i {
+      margin-right: 5px;
+    }
+    .path-preview {
+      height: 0;
+      overflow: hidden;
+      transition: height 0.3s ease;
+      background-color: #f0f0f0;
+      border-radius: 4px;
+      margin-top: 10px;
+    }
+    .path-preview.active {
+      height: auto;
+      padding: 10px;
+    }
+    .path-preview pre {
+      margin: 0;
+      white-space: pre-wrap;
+      font-size: 12px;
+    }
+    .file-upload-container {
+      border: 2px dashed #ccc;
+      padding: 20px;
+      text-align: center;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      transition: all 0.3s ease;
+    }
+    .file-upload-container:hover {
+      border-color: #2196F3;
+      background-color: #f0f8ff;
+    }
+    .file-upload-container.drag-over {
+      border-color: #4CAF50;
+      background-color: #e8f5e9;
+    }
+    .file-upload-icon {
+      font-size: 48px;
+      color: #757575;
+      margin-bottom: 10px;
+    }
+    .file-upload-text {
+      margin-bottom: 15px;
+      color: #555;
+    }
+    .file-input-wrapper {
+      position: relative;
+      display: inline-block;
+    }
+    .file-input-wrapper input[type=file] {
+      opacity: 0;
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      cursor: pointer;
+    }
+    .file-input-button {
+      display: inline-block;
+      padding: 8px 16px;
+      background-color: #2196F3;
+      color: white;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .selected-file {
+      margin-top: 10px;
+      font-style: italic;
+      color: #666;
+    }
+    .path-management-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+    .path-management-header h3 {
+      margin: 0;
+    }
+    .refresh-button {
+      padding: 5px 10px;
+      font-size: 12px;
+    }
+    .status-indicator { 
+      text-align: center; 
+      margin: 15px 0; 
+      padding: 10px;
+      background-color: #f9f9f9;
+      border-radius: 4px;
+    }
+    .status-badge { 
+      padding: 5px 10px; 
+      border-radius: 20px; 
+      font-weight: bold;
+      display: inline-block;
+      min-width: 80px;
+    }
+    .status-active {
+      background-color: #e8f5e9; 
+      color: #2e7d32;
+    }
+    .status-inactive {
+      background-color: #f5f5f5; 
+      color: #757575;
+    }
+    .path-select-container { 
+      text-align: center; 
+      padding: 15px;
+      background-color: #f0f8ff;
+      border-radius: 5px;
+    }
+    .path-select {
+      padding: 8px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      margin: 0 10px;
+      min-width: 120px;
+    }
+    .icon { 
+      margin-right: 5px; 
+      font-weight: bold;
+    }
+    .loading-indicator {
+      text-align: center;
+      padding: 20px;
+      color: #757575;
+      font-style: italic;
+    }
+    .empty-message {
+      text-align: center;
+      padding: 30px;
+      color: #757575;
+      font-style: italic;
+      background-color: #f5f5f5;
+      border-radius: 8px;
+    }
+    .error-message {
+      text-align: center;
+      padding: 20px;
+      color: #c62828;
+      background-color: #ffebee;
+      border-radius: 8px;
+      margin: 15px 0;
+    }
+    .path-info-panel {
+      margin-top: 30px;
+      padding: 15px;
+      background-color: #f8f9fa;
+      border-radius: 8px;
+      border-left: 3px solid #2196F3;
+    }
+    .path-info-panel h4 {
+      margin-top: 0;
+      color: #2196F3;
+    }
+    .path-info-panel pre {
+      background-color: #f0f0f0;
+      padding: 10px;
+      border-radius: 4px;
+      overflow-x: auto;
+      font-size: 12px;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    .upload-options {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 15px;
+    }
+    #status-message {
+      padding: 10px;
+      margin-top: 15px;
+      border-radius: 5px;
+      display: none;
+    }
+    .success {
+      background-color: #e8f5e9;
+      color: #2e7d32;
+    }
+    .error {
+      background-color: #ffebee;
+      color: #c62828;
+    }
+    /* 模式按钮容器样式 */
+    .mode-buttons {
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: center;
+    }
+    .mode-buttons button {
+      margin: 0 10px;
+      min-width: 120px;
+    }
+    /* 控制按钮容器样式 */
+    .control-buttons {
+      margin-top: 20px;
+    }
+    .control-container {
+      display: none;
+      margin-top: 20px;
+      padding: 20px;
+      background-color: #f8f9fa;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+      transition: all 0.3s ease;
+      border-left: 5px solid #4CAF50;
+    }
+    .control-container.active {
+      display: block;
+      animation: fadeIn 0.5s;
+    }
+    .control-container h3 {
+      margin-top: 0;
+      color: #333;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 10px;
+      margin-bottom: 15px;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .button-group {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .button-group button {
+      min-width: 120px;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .button-group button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .button-group button:active {
+      transform: translateY(1px);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>ESP32机械臂控制</h1>
+    
+    <div class="tab">
+      <button class="tablinks active" onclick="openTab(event, 'control')">实时控制</button>
+      <button class="tablinks" onclick="openTab(event, 'learning')">学习模式</button>
+      <button class="tablinks" onclick="openTab(event, 'paths')">路径管理</button>
+    </div>
+    
+    <div id="control" class="tabcontent" style="display:block;">
+      <h2>实时关节控制</h2>
+      <div class="row">
+        <div class="col">
+          <div class="slider-container">
+            <label>底座 <span id="baseValue" class="slider-value">0</span>°</label>
+            <input type="range" id="baseSlider" min="0" max="180" value="90" oninput="updateSlider('base', this.value)">
+          </div>
+          <div class="slider-container">
+            <label>肩部 <span id="shoulderValue" class="slider-value">0</span>°</label>
+            <input type="range" id="shoulderSlider" min="0" max="180" value="90" oninput="updateSlider('shoulder', this.value)">
+          </div>
+          <div class="slider-container">
+            <label>肘部 <span id="elbowValue" class="slider-value">0</span>°</label>
+            <input type="range" id="elbowSlider" min="0" max="180" value="90" oninput="updateSlider('elbow', this.value)">
+          </div>
+          <div class="slider-container">
+            <label>腕部 <span id="wristValue" class="slider-value">0</span>°</label>
+            <input type="range" id="wristSlider" min="0" max="180" value="90" oninput="updateSlider('wrist', this.value)">
+          </div>
+          <div class="slider-container">
+            <label>夹爪 <span id="gripperValue" class="slider-value">0</span>°</label>
+            <input type="range" id="gripperSlider" min="0" max="90" value="45" oninput="updateSlider('gripper', this.value)">
+          </div>
+        </div>
+        <div class="col">
+          <button onclick="sendHome()" class="btn-info">回到原位</button>
+          <button onclick="refreshStatus()" class="btn-info">刷新状态</button>
+          <div class="status" id="armStatus">
+            <h3>机械臂状态</h3>
+            <p>底座: <span id="currentBase">--</span>°</p>
+            <p>肩部: <span id="currentShoulder">--</span>°</p>
+            <p>肘部: <span id="currentElbow">--</span>°</p>
+            <p>腕部: <span id="currentWrist">--</span>°</p>
+            <p>夹爪: <span id="currentGripper">--</span>°</p>
+            <p>模式: <span id="currentMode">--</span></p>
+            <p>录制状态: <span id="isRecording">--</span></p>
+            <p>回放状态: <span id="isPlaying">--</span></p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div id="learning" class="tabcontent">
+      <h2>学习模式控制</h2>
+      
+      <!-- 模式选择按钮 -->
+      <div class="mode-buttons">
+        <button id="modeManual" onclick="setMode(0)" class="btn-info">手动模式</button>
+        <button id="modeRecord" onclick="setMode(1)" class="btn-warning">录制模式</button>
+        <button id="modePlayback" onclick="setMode(2)" class="btn-info">回放模式</button>
+      </div>
+      
+      <!-- 手动模式控制面板 -->
+      <div id="manualControls" class="control-container">
+        <h3>手动控制模式</h3>
+        <p>在此模式下，您可以通过实时控制页面的滑块控制机械臂。</p>
+        <p>或使用电位器手动控制机械臂位置。</p>
+      </div>
+      
+      <!-- 录制模式控制面板 -->
+      <div id="recordControls" class="control-container">
+        <h3>录制控制</h3>
+        <div class="row">
+          <div class="col">
+            <div class="button-group">
+              <button id="startRecording" onclick="startRecording()" class="btn-success">
+                <i class="icon">●</i> 开始录制
+              </button>
+              <button id="stopRecording" onclick="stopRecording()" class="btn-danger">
+                <i class="icon">■</i> 停止录制
+              </button>
+            </div>
+            <div class="status-indicator">
+              <p>录制状态: <span id="recordingStatus" class="status-badge">未开始</span></p>
+            </div>
+          </div>
+          <div class="col">
+            <div class="path-select-container">
+              <label for="recordPathIndexSelect">保存到路径索引:</label>
+              <select id="recordPathIndexSelect" class="path-select">
+                <option value="0">路径 0</option>
+                <option value="1">路径 1</option>
+                <option value="2">路径 2</option>
+                <option value="3">路径 3</option>
+                <option value="4">路径 4</option>
+              </select>
+              <button onclick="savePath()" class="btn-info">
+                <i class="icon">💾</i> 保存路径
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 回放模式控制面板 -->
+      <div id="playbackControls" class="control-container">
+        <h3>回放控制</h3>
+        <div class="row">
+          <div class="col">
+            <div class="button-group">
+              <button id="startPlayback" onclick="startPlayback()" class="btn-success">
+                <i class="icon">▶</i> 开始回放
+              </button>
+              <button id="stopPlayback" onclick="stopPlayback()" class="btn-danger">
+                <i class="icon">■</i> 停止回放
+              </button>
+            </div>
+            <div class="status-indicator">
+              <p>回放状态: <span id="playbackStatus" class="status-badge">未开始</span></p>
+            </div>
+          </div>
+          <div class="col">
+            <div class="path-select-container">
+              <label for="playbackPathIndexSelect">选择回放路径:</label>
+              <select id="playbackPathIndexSelect" class="path-select">
+                <option value="0">路径 0</option>
+                <option value="1">路径 1</option>
+                <option value="2">路径 2</option>
+                <option value="3">路径 3</option>
+                <option value="4">路径 4</option>
+              </select>
+              <button onclick="loadPath()" class="btn-info">
+                <i class="icon">📂</i> 加载路径
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div id="paths" class="tabcontent">
+      <h2>路径文件管理</h2>
+      <div class="row">
+        <div class="col">
+          <div class="path-management-header">
+            <h3>可用路径</h3>
+            <button onclick="updatePathList()" class="btn-info refresh-button">
+              <i class="icon">🔄</i> 刷新
+            </button>
+          </div>
+          <div class="path-list" id="pathList">
+            <!-- 路径项目会在这里动态添加 -->
+            <div class="loading-indicator">加载中...</div>
+          </div>
+        </div>
+        <div class="col">
+          <h3>上传路径文件</h3>
+          <div class="file-upload-container" id="dropZone">
+            <div class="file-upload-icon">📁</div>
+            <div class="file-upload-text">拖放文件到此处或点击下方按钮选择文件</div>
+            <div class="file-input-wrapper">
+              <div class="file-input-button">选择文件</div>
+              <input type="file" id="pathFile" accept=".json" onchange="handleFileSelect(event)">
+            </div>
+            <div class="selected-file" id="selectedFileName"></div>
+          </div>
+          
+          <div class="upload-options">
+            <div class="form-group">
+              <label for="uploadPathIndex">上传到路径索引:</label>
+              <select id="uploadPathIndex" class="path-select">
+                <option value="0">路径 0</option>
+                <option value="1">路径 1</option>
+                <option value="2">路径 2</option>
+                <option value="3">路径 3</option>
+                <option value="4">路径 4</option>
+              </select>
+            </div>
+            <button onclick="uploadPathFile()" class="btn-info" id="uploadButton" disabled>
+              <i class="icon">⬆️</i> 上传文件
+            </button>
+          </div>
+          
+          <div class="path-info-panel">
+            <h4>路径文件格式说明</h4>
+            <p>路径文件是JSON格式，包含以下结构：</p>
+            <pre>{
+  "path_index": 0,
+  "point_count": 10,
+  "total_time_ms": 5000,
+  "points": [
+    {
+      "timestamp": 0,
+      "angles": {
+        "base": 90,
+        "shoulder": 90,
+        "elbow": 90,
+        "wrist": 90,
+        "gripper": 45
+      }
+    },
+    ...
+  ]
+}</pre>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div id="status-message"></div>
+  </div>
+  
+  <script>
+    let sliderChangeTimeout = null;
+    let currentMode = 0;
+    
+    // 页面加载完成后执行
+    window.onload = function() {
+      // 初始化状态
+      refreshStatus();
+      
+      // 初始化路径列表，添加重试机制
+      updatePathList(true);
+      
+      // 初始化拖放功能
+      initDragAndDrop();
+      
+      // 添加自动刷新功能
+      setInterval(function() {
+        refreshStatus();
+      }, 2000); // 每2秒刷新一次
+    };
+    
+    function openTab(evt, tabName) {
+      var i, tabcontent, tablinks;
+      tabcontent = document.getElementsByClassName("tabcontent");
+      for (i = 0; i < tabcontent.length; i++) {
+        tabcontent[i].style.display = "none";
+      }
+      tablinks = document.getElementsByClassName("tablinks");
+      for (i = 0; i < tablinks.length; i++) {
+        tablinks[i].className = tablinks[i].className.replace(" active", "");
+      }
+      document.getElementById(tabName).style.display = "block";
+      evt.currentTarget.className += " active";
+      
+      // 如果切换到路径管理，刷新路径列表
+      if (tabName === 'paths') {
+        updatePathList();
+      }
+    }
+    
+    function updateSlider(joint, value) {
+      document.getElementById(joint + 'Value').textContent = value;
+      
+      // 控制速率，避免频繁发送请求
+      if (sliderChangeTimeout) {
+        clearTimeout(sliderChangeTimeout);
+      }
+      
+      sliderChangeTimeout = setTimeout(function() {
+        let data = {};
+        data[joint] = parseInt(value);
+        sendControlCommand(data);
+      }, 100);
+    }
+    
+    function sendControlCommand(data) {
+      fetch('/api/control', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (!data.success) {
+          showMessage('控制命令失败', false);
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        showMessage('通信错误: ' + error, false);
+      });
+    }
+    
+    function refreshStatus() {
+      fetch('/api/status')
+      .then(response => response.json())
+      .then(data => {
+        document.getElementById('currentBase').textContent = data.base;
+        document.getElementById('currentShoulder').textContent = data.shoulder;
+        document.getElementById('currentElbow').textContent = data.elbow;
+        document.getElementById('currentWrist').textContent = data.wrist;
+        document.getElementById('currentGripper').textContent = data.gripper;
+        
+        // 更新滑块位置
+        document.getElementById('baseSlider').value = data.base;
+        document.getElementById('shoulderSlider').value = data.shoulder;
+        document.getElementById('elbowSlider').value = data.elbow;
+        document.getElementById('wristSlider').value = data.wrist;
+        document.getElementById('gripperSlider').value = data.gripper;
+        
+        document.getElementById('baseValue').textContent = data.base;
+        document.getElementById('shoulderValue').textContent = data.shoulder;
+        document.getElementById('elbowValue').textContent = data.elbow;
+        document.getElementById('wristValue').textContent = data.wrist;
+        document.getElementById('gripperValue').textContent = data.gripper;
+        
+        // 更新模式
+        const modes = ['手动模式', '录制模式', '回放模式'];
+        document.getElementById('currentMode').textContent = modes[data.mode];
+        currentMode = data.mode;
+        
+        // 更新录制和回放状态
+        document.getElementById('isRecording').textContent = data.is_recording ? '进行中' : '未开始';
+        document.getElementById('isPlaying').textContent = data.is_playing ? '进行中' : '未开始';
+        
+        // 更新录制状态指示器
+        const recordingStatus = document.getElementById('recordingStatus');
+        if (data.is_recording) {
+          recordingStatus.textContent = '录制中';
+          recordingStatus.className = 'status-badge status-active';
+        } else {
+          recordingStatus.textContent = '未开始';
+          recordingStatus.className = 'status-badge status-inactive';
+        }
+        
+        // 更新回放状态指示器
+        const playbackStatus = document.getElementById('playbackStatus');
+        if (data.is_playing) {
+          playbackStatus.textContent = '回放中';
+          playbackStatus.className = 'status-badge status-active';
+        } else {
+          playbackStatus.textContent = '未开始';
+          playbackStatus.className = 'status-badge status-inactive';
+        }
+        
+        // 根据模式和录制/回放状态更新按钮状态
+        updateButtonStates(data.mode, data.is_recording, data.is_playing);
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        showMessage('获取状态失败: ' + error, false);
+      });
+    }
+    
+    // 新增函数：根据当前模式和状态更新所有按钮状态
+    function updateButtonStates(mode, isRecording, isPlaying) {
+      // 更新模式按钮样式
+      document.getElementById('modeManual').className = mode === 0 ? 'btn-info' : '';
+      document.getElementById('modeRecord').className = mode === 1 ? 'btn-warning' : '';
+      document.getElementById('modePlayback').className = mode === 2 ? 'btn-info' : '';
+      
+      // 显示/隐藏对应的控制面板
+      document.getElementById('manualControls').className = mode === 0 ? 'control-container active' : 'control-container';
+      document.getElementById('recordControls').className = mode === 1 ? 'control-container active' : 'control-container';
+      document.getElementById('playbackControls').className = mode === 2 ? 'control-container active' : 'control-container';
+      
+      // 更新录制相关按钮状态（仅在录制模式下可用）
+      document.getElementById('startRecording').disabled = isRecording;
+      document.getElementById('stopRecording').disabled = !isRecording;
+      
+      // 更新回放相关按钮状态（仅在回放模式下可用）
+      document.getElementById('startPlayback').disabled = isPlaying;
+      document.getElementById('stopPlayback').disabled = !isPlaying;
+    }
+    
+    function sendHome() {
+      sendControlCommand({ action: 'home' });
+      setTimeout(refreshStatus, 1000);
+    }
+    
+    function setMode(mode) {
+      fetch('/api/learning', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ action: 'set_mode', mode: mode })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          currentMode = mode;
+          showMessage(data.message, true);
+          // 延迟刷新状态，确保后端状态已更新
+          setTimeout(refreshStatus, 300);
+        } else {
+          showMessage(data.message, false);
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        showMessage('设置模式失败: ' + error, false);
+      });
+    }
+    
+    function startRecording() {
+      sendLearningCommand('start_recording');
+    }
+    
+    function stopRecording() {
+      sendLearningCommand('stop_recording');
+    }
+    
+    function startPlayback() {
+      const pathIndex = document.getElementById('playbackPathIndexSelect').value;
+      sendLearningCommand('start_playback', pathIndex);
+    }
+    
+    function stopPlayback() {
+      sendLearningCommand('stop_playback');
+    }
+    
+    function savePath() {
+      const pathIndex = document.getElementById('recordPathIndexSelect').value;
+      console.log(`尝试保存路径到索引 ${pathIndex}`);
+      
+      // 检查当前路径是否有点
+      fetch('/api/status')
+        .then(response => response.json())
+        .then(data => {
+          if (data.is_recording) {
+            showMessage("请先停止录制，然后再保存路径", false);
+            return;
+          }
+          
+          // 继续保存路径
+          sendLearningCommand('save_path', pathIndex)
+            .then(success => {
+              if (success) {
+                console.log(`路径${pathIndex}保存成功，刷新路径列表`);
+                
+                // 切换到路径管理页面
+                document.querySelectorAll('.tablinks').forEach(tab => {
+                  tab.classList.remove('active');
+                });
+                document.querySelectorAll('.tabcontent').forEach(content => {
+                  content.style.display = 'none';
+                });
+                document.getElementById('paths').style.display = 'block';
+                document.querySelector('.tablinks[onclick*="paths"]').classList.add('active');
+                
+                // 延迟更长时间，确保NVS写入完成
+                setTimeout(() => {
+                  updatePathList();
+                  showMessage(`路径${pathIndex}保存成功，已更新路径列表`, true);
+                }, 1500);
+              }
+            });
+        })
+        .catch(error => {
+          console.error('获取状态失败:', error);
+          showMessage('获取状态失败', false);
+        });
+    }
+    
+    function loadPath() {
+      const pathIndex = document.getElementById('playbackPathIndexSelect').value;
+      sendLearningCommand('load_path', pathIndex);
+    }
+    
+    function sendLearningCommand(action, pathIndex = 0) {
+      console.log(`发送学习命令: ${action}, 路径索引: ${pathIndex}`);
+      return fetch('/api/learning', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ action: action, path_index: parseInt(pathIndex) })
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP错误 ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        showMessage(data.message, data.success);
+        if (data.success) {
+          // 立即刷新状态，确保UI与后端状态同步
+          setTimeout(refreshStatus, 300);
+          return true;
+        } else {
+          console.warn('操作失败: ' + data.message);
+          return false;
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        showMessage('操作失败: ' + error, false);
+        return false;
+      });
+    }
+    
+    // 添加重试机制的updatePathList函数
+    function updatePathList(isInitial = false) {
+      console.log('开始更新路径列表' + (isInitial ? ' (初始化)' : ''));
+      const pathList = document.getElementById('pathList');
+      pathList.innerHTML = '<div class="loading-indicator">加载中...</div>';
+      
+      // 检查每个路径是否存在
+      const pathCheckPromises = [];
+      
+      for (let i = 0; i < 5; i++) {
+        // 尝试加载路径信息
+        const promise = fetch(`/api/download_path?idx=${i}`)
+          .then(response => {
+            console.log(`路径${i}检查结果: ${response.status}`);
+            if (!response.ok) {
+              if (response.status === 404) {
+                console.log(`路径${i}不存在`);
+                return { exists: false, index: i };
+              }
+              throw new Error(`HTTP错误 ${response.status}`);
+            }
+            return response.json().then(data => {
+              console.log(`路径${i}存在，点数量: ${data.point_count}`);
+              return { 
+                exists: true, 
+                index: i, 
+                data: data,
+                pointCount: data.point_count,
+                totalTime: data.total_time_ms
+              };
+            });
+          })
+          .catch(error => {
+            console.error(`检查路径${i}时出错:`, error);
+            return { exists: false, index: i, error: error.message };
+          });
+        
+        pathCheckPromises.push(promise);
+      }
+      
+      // 等待所有路径检查完成
+      Promise.all(pathCheckPromises)
+        .then(results => {
+          pathList.innerHTML = '';
+          
+          if (results.every(result => !result.exists)) {
+            pathList.innerHTML = '<div class="empty-message">没有保存的路径</div>';
+            return;
+          }
+          
+          // 显示路径列表
+          results.forEach(result => {
+            const pathItem = document.createElement('div');
+            pathItem.className = 'path-item';
+            pathItem.dataset.index = result.index;
+            
+            // 路径标题和状态
+            const pathHeader = document.createElement('div');
+            pathHeader.className = 'path-header';
+            
+            const pathTitle = document.createElement('div');
+            pathTitle.className = 'path-title';
+            
+            const statusIndicator = document.createElement('span');
+            statusIndicator.className = `path-status ${result.exists ? 'exists' : 'empty'}`;
+            pathTitle.appendChild(statusIndicator);
+            
+            const titleText = document.createTextNode(`路径 ${result.index}`);
+            pathTitle.appendChild(titleText);
+            
+            pathHeader.appendChild(pathTitle);
+            pathItem.appendChild(pathHeader);
+            
+            // 路径信息
+            if (result.exists) {
+              const pathInfo = document.createElement('div');
+              pathInfo.className = 'path-info';
+              pathInfo.innerHTML = `
+                <div>点数量: <strong>${result.pointCount}</strong></div>
+                <div>总时长: <strong>${(result.totalTime / 1000).toFixed(1)} 秒</strong></div>
+              `;
+              pathItem.appendChild(pathInfo);
+              
+              // 预览容器
+              const previewContainer = document.createElement('div');
+              previewContainer.className = 'path-preview';
+              previewContainer.id = `preview-${result.index}`;
+              
+              const previewContent = document.createElement('pre');
+              // 只显示前3个点和最后1个点
+              const points = result.data.points;
+              let previewText = '';
+              
+              if (points.length <= 4) {
+                previewText = JSON.stringify(points, null, 2);
+              } else {
+                const previewPoints = [...points.slice(0, 3), { note: '... 中间省略 ...' }, points[points.length - 1]];
+                previewText = JSON.stringify(previewPoints, null, 2);
+              }
+              
+              previewContent.textContent = previewText;
+              previewContainer.appendChild(previewContent);
+              pathItem.appendChild(previewContainer);
+            } else {
+              const pathInfo = document.createElement('div');
+              pathInfo.className = 'path-info';
+              pathInfo.textContent = '未保存路径';
+              pathItem.appendChild(pathInfo);
+            }
+            
+            // 操作按钮
+            const pathActions = document.createElement('div');
+            pathActions.className = 'path-actions';
+            
+            if (result.exists) {
+              // 预览按钮
+              const previewBtn = document.createElement('button');
+              previewBtn.innerHTML = '<i class="icon">👁️</i> 预览';
+              previewBtn.className = 'btn-info';
+              previewBtn.onclick = function() { 
+                togglePreview(result.index); 
+              };
+              pathActions.appendChild(previewBtn);
+              
+              // 下载按钮
+              const downloadBtn = document.createElement('button');
+              downloadBtn.innerHTML = '<i class="icon">⬇️</i> 下载';
+              downloadBtn.className = 'btn-info';
+              downloadBtn.onclick = function() { downloadPath(result.index); };
+              pathActions.appendChild(downloadBtn);
+              
+              // 删除按钮
+              const deleteBtn = document.createElement('button');
+              deleteBtn.innerHTML = '<i class="icon">🗑️</i> 删除';
+              deleteBtn.className = 'btn-danger';
+              deleteBtn.onclick = function() { deletePath(result.index); };
+              pathActions.appendChild(deleteBtn);
+            } else {
+              // 上传按钮
+              const uploadBtn = document.createElement('button');
+              uploadBtn.innerHTML = '<i class="icon">⬆️</i> 上传到此';
+              uploadBtn.className = 'btn-info';
+              uploadBtn.onclick = function() { 
+                document.getElementById('uploadPathIndex').value = result.index;
+                // 滚动到上传区域
+                document.getElementById('dropZone').scrollIntoView({ behavior: 'smooth' });
+              };
+              pathActions.appendChild(uploadBtn);
+            }
+            
+            pathItem.appendChild(pathActions);
+            pathList.appendChild(pathItem);
+          });
+        })
+        .catch(error => {
+          console.error('更新路径列表失败:', error);
+          pathList.innerHTML = `<div class="error-message">加载路径列表失败: ${error.message}</div>`;
+          
+          // 如果是初始化加载，尝试重试
+          if (isInitial) {
+            console.log('3秒后重试加载路径列表...');
+            setTimeout(() => updatePathList(), 3000);
+          }
+        });
+    }
+    
+    // 切换路径预览
+    function togglePreview(index) {
+      const previewElement = document.getElementById(`preview-${index}`);
+      if (previewElement.classList.contains('active')) {
+        previewElement.classList.remove('active');
+      } else {
+        previewElement.classList.add('active');
+      }
+    }
+    
+    // 文件拖放处理
+    function initDragAndDrop() {
+      const dropZone = document.getElementById('dropZone');
+      
+      // 阻止默认拖放行为
+      ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, preventDefaults, false);
+      });
+      
+      function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      
+      // 高亮显示拖放区域
+      ['dragenter', 'dragover'].forEach(eventName => {
+        dropZone.addEventListener(eventName, highlight, false);
+      });
+      
+      ['dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, unhighlight, false);
+      });
+      
+      function highlight() {
+        dropZone.classList.add('drag-over');
+      }
+      
+      function unhighlight() {
+        dropZone.classList.remove('drag-over');
+      }
+      
+      // 处理拖放文件
+      dropZone.addEventListener('drop', handleDrop, false);
+      
+      function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        
+        if (files.length > 0) {
+          handleFiles(files);
+        }
+      }
+    }
+    
+    // 处理选择的文件
+    function handleFileSelect(event) {
+      const files = event.target.files;
+      handleFiles(files);
+    }
+    
+    // 处理文件
+    function handleFiles(files) {
+      if (files.length === 0) return;
+      
+      const file = files[0];
+      if (file.type !== 'application/json' && !file.name.endsWith('.json')) {
+        showMessage('请选择JSON格式的路径文件', false);
+        return;
+      }
+      
+      // 检查文件大小
+      const MAX_FILE_SIZE = 30 * 1024; // 30KB
+      if (file.size > MAX_FILE_SIZE) {
+        showMessage(`文件太大 (${(file.size/1024).toFixed(1)}KB)，最大允许 ${MAX_FILE_SIZE/1024}KB`, false);
+        return;
+      }
+      
+      // 显示选择的文件名和大小
+      document.getElementById('selectedFileName').textContent = `${file.name} (${(file.size/1024).toFixed(1)}KB)`;
+      // 启用上传按钮
+      document.getElementById('uploadButton').disabled = false;
+      
+      // 保存文件引用
+      window.selectedPathFile = file;
+    }
+    
+    function uploadPathFile() {
+      const file = window.selectedPathFile;
+      if (!file) {
+        showMessage('请选择路径文件', false);
+        return;
+      }
+      
+      const pathIndex = document.getElementById('uploadPathIndex').value;
+      
+      // 显示上传中状态
+      showMessage('正在上传文件，请稍候...', true);
+      document.getElementById('uploadButton').disabled = true;
+      
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          let content = JSON.parse(e.target.result);
+          
+          // 确保路径索引与选择的一致
+          content.path_index = parseInt(pathIndex);
+          
+          console.log(`准备上传路径${pathIndex}，文件大小: ${file.size} 字节`);
+          
+          // 上传路径文件
+          fetch('/api/upload_path', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(content)
+          })
+          .then(response => {
+            if (!response.ok) {
+              throw new Error(`HTTP错误: ${response.status} ${response.statusText}`);
+            }
+            return response.json();
+          })
+          .then(data => {
+            if (data.success) {
+              showMessage(data.message || `路径成功上传到索引 ${pathIndex}`, true);
+              // 清除文件选择
+              document.getElementById('pathFile').value = '';
+              document.getElementById('selectedFileName').textContent = '';
+              document.getElementById('uploadButton').disabled = true;
+              window.selectedPathFile = null;
+              // 刷新路径列表
+              setTimeout(updatePathList, 500);
+            } else {
+              showMessage(data.message || '路径上传失败', false);
+              // 重新启用上传按钮
+              document.getElementById('uploadButton').disabled = false;
+            }
+          })
+          .catch(error => {
+            console.error('Error:', error);
+            showMessage('上传错误: ' + error.message, false);
+            // 重新启用上传按钮
+            document.getElementById('uploadButton').disabled = false;
+          });
+        } catch (error) {
+          showMessage('文件格式错误: ' + error.message, false);
+          document.getElementById('uploadButton').disabled = false;
+        }
+      };
+      
+      reader.onerror = function() {
+        showMessage('读取文件失败', false);
+        document.getElementById('uploadButton').disabled = false;
+      };
+      
+      reader.readAsText(file);
+    }
+    
+    function showMessage(message, success) {
+      const statusElement = document.getElementById('status-message');
+      statusElement.textContent = message;
+      statusElement.className = success ? 'success' : 'error';
+      statusElement.style.display = 'block';
+      
+      // 清除之前的定时器
+      if (window.messageTimeout) {
+        clearTimeout(window.messageTimeout);
+      }
+      
+      // 5秒后隐藏消息
+      window.messageTimeout = setTimeout(() => {
+        statusElement.style.display = 'none';
+      }, 5000);
+    }
+    
+    function downloadPath(index) {
+      window.location.href = `/api/download_path?idx=${index}`;
+    }
+    
+    function deletePath(index) {
+      if (confirm(`确定要删除路径 ${index} 吗?`)) {
+        sendLearningCommand('delete_path', index);
+        setTimeout(updatePathList, 500);
+      }
+    }
+  </script>
+</body>
+</html> 
