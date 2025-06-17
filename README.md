@@ -1,9 +1,7 @@
-| Supported Targets | ESP32 | ESP32-C2 | ESP32-C3 | ESP32-C6 | ESP32-H2 | ESP32-P4 | ESP32-S2 | ESP32-S3 | Linux |
-| ----------------- | ----- | -------- | -------- | -------- | -------- | -------- | -------- | -------- | ----- |
 
 # ESP32 5自由度机械臂控制系统
 
-[![ESP-IDF版本](https://img.shields.io/badge/ESP--IDF-v5.0+-blue.svg)](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/index.html)
+[![ESP-IDF版本](https://img.shields.io/badge/ESP--IDF-v5.4+-blue.svg)](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/index.html)
 [![许可证](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![平台](https://img.shields.io/badge/平台-ESP32-orange.svg)](https://www.espressif.com/en/products/socs/esp32)
 
@@ -11,7 +9,7 @@
   <img src="docs/images/robot_arm_logo.png" alt="机械臂控制系统" width="300"/>
 </p>
 
-> 基于ESP32-WROOM和PCA9685的5自由度机械臂控制系统，使用ESP-IDF框架开发。系统支持Web界面控制、学习模式和路径管理功能。
+> 基于ESP32-WROOM和PCA9685的5自由度机械臂控制系统，使用ESP-IDF框架开发。机械臂结构使用了开源项目(https://www.youtube.com/watch?v=5toNqaGsGYs)，系统支持Web界面控制、学习模式和路径管理功能。
 
 ## 📋 目录
 
@@ -62,7 +60,7 @@
 | 底座舵机 | MG996R | 1 |
 | 关节舵机 | MG996R | 3 |
 | 夹爪舵机 | SG90 | 1 |
-| 电源 | 5V/5A电源适配器 | 1 |
+| 电源 | 5V/2A电源适配器 | 1 |
 | 电位器 | 10K欧姆 | 5 |
 
 ## 📐 硬件连接
@@ -105,7 +103,9 @@
 系统提供了一个完整的Web界面，可通过浏览器访问控制机械臂：
 
 <p align="center">
-  <img src="docs/images/web_interface.png" alt="Web界面" width="600"/>
+  <img src="docs/images/web_interface1.png" alt="Web界面" width="600"/>
+  <img src="docs/images/web_interface2.png" alt="Web界面" width="600"/>
+  <img src="docs/images/web_interface3.png" alt="Web界面" width="600"/>
 </p>
 
 ### 实时控制
