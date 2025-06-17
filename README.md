@@ -6,7 +6,7 @@
 [![平台](https://img.shields.io/badge/平台-ESP32-orange.svg)](https://www.espressif.com/en/products/socs/esp32)
 
 <p align="center">
-  <img src="docs/images/robot_arm_logo.png" alt="机械臂控制系统" width="300"/>
+  <img src="./docs/images/robot_arm_logo.png" alt="机械臂控制系统" width="300"/>
 </p>
 
 > 基于ESP32-WROOM和PCA9685的5自由度机械臂控制系统，使用ESP-IDF框架开发。机械臂结构使用了开源项目(https://www.youtube.com/watch?v=5toNqaGsGYs)，系统支持Web界面控制、学习模式和路径管理功能。
@@ -103,9 +103,9 @@
 系统提供了一个完整的Web界面，可通过浏览器访问控制机械臂：
 
 <p align="center">
-  <img src="docs/images/web_interface1.png" alt="Web界面" width="600"/>
-  <img src="docs/images/web_interface2.png" alt="Web界面" width="600"/>
-  <img src="docs/images/web_interface3.png" alt="Web界面" width="600"/>
+  <img src="./docs/images/web_interface1.png" alt="Web界面" width="600"/>
+  <img src="./docs/images/web_interface2.png" alt="Web界面" width="600"/>
+  <img src="./docs/images/web_interface3.png" alt="Web界面" width="600"/>
 </p>
 
 ### 实时控制
