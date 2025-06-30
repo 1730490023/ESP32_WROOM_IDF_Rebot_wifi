@@ -2,8 +2,6 @@
 build/
 
 # Generated files
-sdkconfig
-sdkconfig.old
 managed_components/
 
 # Environment and IDE specific
